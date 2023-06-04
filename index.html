@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game</title>
+  <style>
+    /* CSS樣式設定 */
+    body {
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    .game-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      gap: 1px;
+      background-color: #222;
+      width: 300px;
+      height: 300px;
+      margin: 20px;
+    }
+
+    .snake-body {
+      background-color: green;
+    }
+
+    .snake-head {
+      background-color: yellow;
+    }
+
+    .food {
+      background-color: red;
+    }
+
+    .score {
+      font-size: 24px;
+    }
+
+    .author {
+      margin-top: 20px;
+      font-size: 14px;
+      color: white;
+    }
+
+    .instructions {
+      margin-top: 20px;
+      font-size: 14px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Snake Game</h1>
+    <button id="startButton" disabled>Start Game</button>
+    <div class="game-board" id="gameBoard"></div>
+    <div class="score">Score: <span id="score">0</span></div>
+    <div class="1">作者: 謝祁翰</div>
+    <div class="2">按下空白鍵開始遊戲</div>
+    <div class="3">電腦端用戶請透過方向鍵控制方向</div>
+    <div class="4">手機端用戶請透過滑動螢幕控制方向</div>
+    <div class="5">本模式無通關條件，請盡量挑戰自我極限</div>  
+  </div>
+  </div>
+
+  <script>
+    // 遊戲邏輯
+    const gameBoardSize = 20;
+    const gameBoard = document.getElementById('gameBoard');
+    const scoreElement = document.getElementById('score');
+    const startButton = document.getElementById('startButton');
+    const snake = [{ x: 10, y: 10 }];
+    let food = { x: 5, y: 5 };
+    let direction = 'right';
+    let score = 0;
+    let gameRunning = false;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    // 繪製遊戲板
+    function drawGameBoard() {
+      gameBoard.innerHTML = '';
+
+      // 繪製蛇身
+      snake.forEach((segment, index) => {
+        const snakeElement = document.createElement('div');
+        snakeElement.style.gridColumnStart = segment.x;
+        snakeElement.style.gridRowStart = segment.y;
+        snakeElement.classList.add('snake-body');
+        if (index === 0) {
+          snakeElement.classList.add('snake-head');
+        }
+        gameBoard.appendChild(snakeElement);
+      });
+
+      // 繪製食物
+      const foodElement = document.createElement('div');
+      foodElement.style.gridColumnStart = food.x;
+      foodElement.style.gridRowStart = food.y;
+      foodElement.classList.add('food');
+      gameBoard.appendChild(foodElement);
+    }
+
+    // 移動蛇
+    function moveSnake() {
+      const head = { x: snake[0].x, y: snake[0].y };
+
+      // 根據方向更新蛇頭的座標
+      switch (direction) {
+        case 'up':
+          head.y--;
+          break;
+        case 'down':
+          head.y++;
+          break;
+        case 'left':
+          head.x--;
+          break;
+        case 'right':
+          head.x++;
+          break;
+      }
+
+      // 檢查蛇頭是否碰到牆壁
+      if (
+        head.x < 1 ||
+        head.x > gameBoardSize ||
+        head.y < 1 ||
+        head.y > gameBoardSize
+      ) {
+        return gameOver();
+      }
+
+      // 檢查蛇頭是否碰到自己的身體
+      for (let i = 1; i < snake.length; i++) {
+        if (head.x === snake[i].x && head.y === snake[i].y) {
+          return gameOver();
+        }
+      }
+
+      // 將新的蛇頭加入到蛇身陣列的最前面
+      snake.unshift(head);
+
+      // 如果蛇頭和食物座標相同，表示吃到食物
+      if (head.x === food.x && head.y === food.y) {
+        // 生成新的食物
+        generateNewFood();
+
+        // 增加分數
+        score += 1;
+        scoreElement.textContent = score;
+      } else {
+        // 移除蛇尾，使蛇移動起來
+        snake.pop();
+      }
+    }
+
+    // 生成新的食物
+    function generateNewFood() {
+      let newFood = {
+        x: Math.floor(Math.random() * gameBoardSize) + 1,
+        y: Math.floor(Math.random() * gameBoardSize) + 1
+      };
+
+      // 檢查新生成的食物位置是否與蛇身重疊，如果是，重新生成
+      while (
+        snake.some(
+          segment => segment.x === newFood.x && segment.y === newFood.y
+        )
+      ) {
+        newFood = {
+          x: Math.floor(Math.random() * gameBoardSize) + 1,
+          y: Math.floor(Math.random() * gameBoardSize) + 1
+        };
+      }
+
+      food = newFood;
+    }
+
+    // 遊戲結束
+    function gameOver() {
+      alert('Game Over. Your Score: ' + score);
+      resetGame();
+    }
+
+    // 更新遊戲
+    function updateGame() {
+      if (!gameRunning) {
+        return;
+      }
+
+      // 移動蛇
+      moveSnake();
+
+      // 繪製遊戲板
+      drawGameBoard();
+
+      // 延遲呼叫updateGame函數，形成遊戲循環
+      setTimeout(updateGame, 100);
+    }
+
+    // 開始遊戲
+    function startGame() {
+      if (gameRunning) {
+        return;
+      }
+
+      gameRunning = true;
+      startButton.disabled = true;
+      updateGame();
+    }
+
+    // 鍵盤事件處理
+    document.addEventListener('keydown', function(event) {
+      // 防止蛇反方向移動
+      if (event.key === 'ArrowUp' && direction !== 'down') {
+        direction = 'up';
+      } else if (event.key === 'ArrowDown' && direction !== 'up') {
+        direction = 'down';
+      } else if (event.key === 'ArrowLeft' && direction !== 'right') {
+        direction = 'left';
+      } else if (event.key === 'ArrowRight' && direction !== 'left') {
+        direction = 'right';
+      }
+    });
+
+    // 觸控事件處理
+    document.addEventListener('touchstart', function(event) {
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    });
+
+    document.addEventListener('touchend', function(event) {
+      const touchEndX = event.changedTouches[0].clientX;
+      const touchEndY = event.changedTouches[0].clientY;
+
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 0 && direction !== 'left') {
+          direction = 'right';
+        } else if (deltaX < 0 && direction !== 'right') {
+          direction = 'left';
+        }
+      } else {
+        if (deltaY > 0 && direction !== 'up') {
+          direction = 'down';
+        } else if (deltaY < 0 && direction !== 'down') {
+          direction = 'up';
+        }
+      }
+    });
+
+    // 空白鍵事件處理
+    document.addEventListener('keydown', function(event) {
+      if (event.key === ' ') {
+        startGame();
+      }
+    });
+
+    // 重設遊戲
+    function resetGame() {
+      gameRunning = false;
+      startButton.disabled = false;
+      snake.length = 1;
+      snake[0] = { x: 10, y: 10 };
+      direction = 'right';
+      score = 0;
+      scoreElement.textContent = score;
+      generateNewFood();
+      drawGameBoard();
+    }
+
+    // 初始化遊戲
+    drawGameBoard();
+    startButton.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
